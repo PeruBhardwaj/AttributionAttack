@@ -1,0 +1,13 @@
+# Ignore Jupyter checkpoints
+.ipynb_checkpoints
+
+# Python
+__pycache__/
+
+# Ignore folders
+data/
+saved_models/
+results/
+losses/
+logs/
+influence_maps/
