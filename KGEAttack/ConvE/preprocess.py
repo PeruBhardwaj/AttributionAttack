@@ -63,7 +63,7 @@ def generate_ids_from_train():
     entities_to_id = {x: i for (i, x) in enumerate(sorted(unique_ent))}
     rel_to_id = {x: i for (i, x) in enumerate(sorted(unique_rel))}
     
-    print("{} entities and {} relations".format(len(unique_ent), len(unique_rel)))
+    print("{}: {} entities and {} relations".format(dataset_name, len(unique_ent), len(unique_rel)))
     
     return unique_ent, unique_rel, entities_to_id, rel_to_id
 
@@ -135,7 +135,7 @@ with open(os.path.join(processed_path, 'entities_dict.json'), 'w') as f:
 with open(os.path.join(processed_path, 'relations_dict.json'), 'w') as f:
     f.write(json.dumps(rel_to_id)  + '\n')
     
-print("{} entities and {} relations".format(len(unique_ent), len(unique_rel)))
+print("{}: {} entities and {} relations".format(dataset_name, len(unique_ent), len(unique_rel)))
     
     
 

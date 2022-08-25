@@ -4,11 +4,11 @@ cd ConvE
 
 
 # # train the original model
-# echo 'Training original model'
+echo 'Training original model'
 
-# CUDA_VISIBLE_DEVICES=0 python -u main.py --model transe --data FB15k-237 --save-influence-map --reproduce-results
+CUDA_VISIBLE_DEVICES=0 python -u main.py --model transe --data FB15k-237 --save-influence-map --reproduce-results
 
-# echo 'Selecting target triples'
+echo 'Selecting target triples'
 mkdir data/target_transe_FB15k-237_0
 CUDA_VISIBLE_DEVICES=0 python -u select_targets.py --model transe --data FB15k-237  --reproduce-results
 CUDA_VISIBLE_DEVICES=0 python -u select_rand_targets.py --model transe --data FB15k-237 --reproduce-results
@@ -47,7 +47,7 @@ python -u wrangle_KG.py score_del_transe_FB15k-237_0_100_1_1_1
 CUDA_VISIBLE_DEVICES=0 python -u main.py --model transe --data score_del_transe_FB15k-237_0_100_1_1_1 --reproduce-results --original-data FB15k-237
 
 
-# echo 'Generating deletions for the neighbourhood using similarity metrics'
+echo 'Generating deletions for the neighbourhood using similarity metrics'
 CUDA_VISIBLE_DEVICES=0 python -u cos_del.py --model transe --data FB15k-237 --reproduce-results
 CUDA_VISIBLE_DEVICES=0 python -u dot_del.py --model transe --data FB15k-237 --reproduce-results
 CUDA_VISIBLE_DEVICES=0 python -u l2_del.py --model transe --data FB15k-237 --reproduce-results
@@ -63,7 +63,7 @@ CUDA_VISIBLE_DEVICES=0 python -u main.py --model transe --data l2_del_transe_FB1
 
 
 
-# echo 'Generating deletions for the neighbourhood using gradient based metrics'
+echo 'Generating deletions for the neighbourhood using gradient based metrics'
 CUDA_VISIBLE_DEVICES=0 python -u cos_grad_del.py --model transe --data FB15k-237 --reproduce-results
 CUDA_VISIBLE_DEVICES=0 python -u dot_grad_del.py --model transe --data FB15k-237 --reproduce-results
 CUDA_VISIBLE_DEVICES=0 python -u l2_grad_del.py --model transe --data FB15k-237 --reproduce-results
@@ -79,7 +79,7 @@ CUDA_VISIBLE_DEVICES=0 python -u main.py --model transe --data l2_grad_del_trans
 
 
 
-# echo 'Generating deletions for the neighbourhood using influence functions'
+echo 'Generating deletions for the neighbourhood using influence functions'
 CUDA_VISIBLE_DEVICES=0 python -u if_del.py --model transe --data FB15k-237 --reproduce-results
 
 python -u wrangle_KG.py if_del_transe_FB15k-237_0_100_1_1_1

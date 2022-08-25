@@ -9,6 +9,8 @@ import math
 from pprint import pprint
 import pandas as pd
 from collections import defaultdict
+import copy
+import time
 
 import torch
 from torch.utils.data import DataLoader
@@ -39,14 +41,7 @@ class Main(object):
                            )
         self.logger = logging.getLogger(__name__)
         self.logger.info(vars(self.args))
-        
-        if self.args.save_influence_map:
-            # when we want to save influence during training
-            self.args.add_reciprocals = False # to keep things simple
-            # init an empty influence map
-            self.influence_map = defaultdict(float)
-            #self.influence_path = 'influence_maps/{0}_{1}.json'.format(args.data, self.model_name)
-            self.influence_path = 'influence_maps/{0}_{1}.pickle'.format(args.data, self.model_name)
+        self.logger.info('\n')
             
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,6 +49,18 @@ class Main(object):
         self.load_data()
         self.model        = self.add_model()
         self.optimizer    = self.add_optimizer(self.model.parameters())
+        
+        if self.args.save_influence_map:
+            self.logger.info('-------- Argument save_influence_map is set. Will use GR to compute and save influence maps ----------\n')
+            # when we want to save influence during training
+            self.args.add_reciprocals = False # to keep things simple
+            # init an empty influence map
+            self.influence_map = defaultdict(float)
+            #self.influence_path = 'influence_maps/{0}_{1}.json'.format(args.data, self.model_name)
+            self.influence_path = 'influence_maps/{0}_{1}.pickle'.format(args.data, self.model_name)
+            # Initialize a copy of the model prams to track previous weights in an epoch
+            self.previous_weights = [copy.deepcopy(param) for param in self.model.parameters()]
+            self.logger.info('Shape for previous weights: {}, {}'.format(self.previous_weights[0].shape, self.previous_weights[1].shape))
         
         return 
     
@@ -282,38 +289,38 @@ class Main(object):
                 
             if (self.args.reg_weight != 0.0 and self.args.reg_norm == 2):
                 total_loss += self.lp_regularizer()
-            
-            if self.args.save_influence_map:  # for gradient rollback
-                d_loss_emb_s = autograd.grad(total_loss, emb_s,
-                                             retain_graph = True)[0]
-                d_loss_emb_r = autograd.grad(total_loss, emb_r, 
-                                             retain_graph= True)[0]
-                d_loss_emb_o = autograd.grad(total_loss, emb_o,
-                                             retain_graph= True)[0]
-                
-                inf_head = d_loss_emb_s.cpu().detach().numpy() # influence of head = gradient of loss due to head
-                inf_tail = d_loss_emb_r.cpu().detach().numpy()
-                inf_rel = d_loss_emb_o.cpu().detach().numpy()
-                
-                #print(inf_head.shape, inf_tail.shape, inf_rel.shape)
-                
-                # need to save the influence per-triple
-                for idx in range(input_batch.shape[0]):
-                    head, rel, tail = s[idx], r[idx], o[idx]
-                    # write the influences to dictionary
-                    key_trip = '{0}_{1}_{2}'.format(head.item(), rel.item(), tail.item())
-                    key = '{0}_s'.format(key_trip)
-                    self.influence_map[key] += inf_head[idx]
-                    #self.logger.info('Written to influence map. Key: {0}, Value shape: {1}'.format(key, inf_head.shape))
-                    key = '{0}_r'.format(key_trip)
-                    self.influence_map[key] += inf_rel[idx]
-                    key = '{0}_o'.format(key_trip)
-                    self.influence_map[key] += inf_tail[idx]
                     
                     
             total_loss.backward()
             self.optimizer.step()
             losses.append(total_loss.item())
+            
+            if self.args.save_influence_map: #for gradient rollback
+                with torch.no_grad():
+                    prev_emb_e = self.previous_weights[0]
+                    prev_emb_rel = self.previous_weights[1]
+                    # need to compute the influence value per-triple
+                    for idx in range(input_batch.shape[0]):
+                        head, rel, tail = s[idx], r[idx], o[idx]
+                        inf_head = (emb_s[idx] - prev_emb_e[head]).cpu().detach().numpy()
+                        inf_tail = (emb_o[idx] - prev_emb_e[tail]).cpu().detach().numpy()
+                        inf_rel = (emb_r[idx] - prev_emb_rel[rel]).cpu().detach().numpy()
+
+                        #print(inf_head.shape, inf_tail.shape, inf_rel.shape)
+
+                        #write the influences to dictionary
+                        key_trip = '{0}_{1}_{2}'.format(head.item(), rel.item(), tail.item())
+                        key = '{0}_s'.format(key_trip)
+                        self.influence_map[key] += inf_head
+                        #self.logger.info('Written to influence map. Key: {0}, Value shape: {1}'.format(key, inf_head.shape))
+                        key = '{0}_r'.format(key_trip)
+                        self.influence_map[key] += inf_rel
+                        key = '{0}_o'.format(key_trip)
+                        self.influence_map[key] += inf_tail
+
+                    # update the previous weights to be tracked
+                    self.previous_weights = [copy.deepcopy(param) for param in self.model.parameters()]
+                
             
             b_begin += batch_size
             
@@ -335,6 +342,11 @@ class Main(object):
             
         self.logger.info(self.model)
         
+        self.logger.info('------ Start the model training ------')
+        start_time = time.time()
+        self.logger.info('Start time: {0}'.format(str(start_time)))
+    
+    
         train_losses = []
         for epoch in range(self.args.epochs):
             train_loss = self.run_epoch(epoch)
@@ -356,12 +368,17 @@ class Main(object):
                 #with open("test.txt", "rb") as fp:   # Unpickling
                 #    b = pickle.load(fp)
                 
-                if self.args.save_influence_map: #save the influence map
+        
+        self.logger.info('Time taken to train the model: {0}'.format(str(time.time() - start_time)))
+        start_time = time.time()
+        
+        if self.args.save_influence_map: #save the influence map
 #                     with open(self.influence_path, 'w') as out:
 #                         out.write(json.dumps(self.get_influence_map(), indent=4)  + '\n')
-                    with open(self.influence_path, "wb") as fp:   #Pickling
-                        pickle.dump(self.get_influence_map(), fp)
-                    self.logger.info('Finished saving influence map')
+            with open(self.influence_path, "wb") as fp:   #Pickling
+                pickle.dump(self.get_influence_map(), fp)
+            self.logger.info('Finished saving influence map')
+            self.logger.info('Time taken to save the influence map: {0}'.format(str(time.time() - start_time)))
         
         return
     
