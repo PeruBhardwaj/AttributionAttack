@@ -3,7 +3,7 @@
 cd ConvE
 
 echo "Adding necessary directories"
-mkdir saved_models data logs influence_maps
+mkdir saved_models data logs influence_maps clusters
 mkdir saved_models/criage_inverter 
 mkdir logs/attack_logs
 
