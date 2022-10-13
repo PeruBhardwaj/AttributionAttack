@@ -11,12 +11,19 @@
 </p>
 
 <p align="left">
-    <a href="https://www.scss.tcd.ie/~bhardwap/EMNLP2021_Paper.pdf"><img src="http://img.shields.io/badge/Paper-Pre--print-orange.svg"></a>
+    <a href="https://arxiv.org/abs/2111.03120"><img src="http://img.shields.io/badge/Paper-Pre--print-orange.svg"></a>
     <a href="https://github.com/PeruBhardwaj/AttributionAttack/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
 
 <h4 align="left">This is the code repository to accompany the EMNLP 2021 paper on adversarial attacks on KGE models. <br>
-For any questions or feedback, add an issue or email me at: peru.bhardwaj@adaptcentre.ie</h4>
+For any questions or feedback, add an issue or email me at: bhardwap at tcd dot ie</h4>
+
+### Related Publications
+1. Poisoning Knowledge Graph Embeddings via Relation Inference Patterns (ACL-IJCNLP 2021) - <a href="https://aclanthology.org/2021.acl-long.147/">Paper</a>, <a href="https://github.com/PeruBhardwaj/InferenceAttack">Codebase</a>
+2. Adversarial Robustness of Representation Learning for Knowledge Graphs (PhD Thesis) - <a href="http://www.tara.tcd.ie/bitstream/handle/2262/101176/Thesis_PeruBhardwaj.pdf">Link</a>
+
+#### Update - 
+The initial codebase had a mistake in the implementation of [Gradient Rollback](https://github.com/carolinlawrence/gradient-rollback). This has been corrected, and updated values are reported in Chapter 4 of the thesis <a href="http://www.tara.tcd.ie/bitstream/handle/2262/101176/Thesis_PeruBhardwaj.pdf">here</a>. 
 
 ## Overview
 ![](overview.png)
